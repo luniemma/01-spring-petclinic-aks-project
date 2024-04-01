@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: luniemmaspringpetclinicaksproject 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: luniemmaspringpetclinicaksproject
+  template:
+    metadata:
+      labels:
+        app: luniemmaspringpetclinicaksproject 
+    spec:
+      containers:
+        - name: luniemmaspringpetclinicaksproject 
+          image: emmacontainer2024.azurecr.io/luniemmaspringpetclinicaksproject
+          ports:
+          - containerPort: 80
