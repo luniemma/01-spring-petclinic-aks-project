@@ -23,6 +23,13 @@ stages:
     pool:
       vmImage: $(vmImageName)
     steps:
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact: drop'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+
     - task: Docker@2
       displayName: Build and push an image to container registry
       inputs:
