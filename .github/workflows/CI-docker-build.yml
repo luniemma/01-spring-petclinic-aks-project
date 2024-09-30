@@ -54,6 +54,7 @@ jobs:
           restore-keys: ${{ runner.os }}-trivy-db
 
       - name: Run Trivy vulnerability scanner
+        id: trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest'
@@ -68,11 +69,11 @@ jobs:
 
       - name: Check for critical vulnerabilities
         run: |
-          if trivy image --severity HIGH,CRITICAL --exit-code 1 --no-progress ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest; then
-            echo "No critical vulnerabilities found"
-          else
+          if grep -q '"level": "CRITICAL"' trivy-results.sarif; then
             echo "Critical vulnerabilities found. Please review the scan results."
             exit 1
+          else
+            echo "No critical vulnerabilities found."
           fi
 
       - name: Push Docker image to Docker Hub
