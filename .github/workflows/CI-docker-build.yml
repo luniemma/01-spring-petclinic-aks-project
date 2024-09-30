@@ -45,6 +45,13 @@ jobs:
       - name: Build Docker image
         run: docker build . -t ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
 
+      # Add caching for Trivy database to avoid rate-limiting
+      - name: Cache Trivy DB
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/trivy
+          key: ${{ runner.os }}-trivy-db
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
