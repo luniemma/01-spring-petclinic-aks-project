@@ -51,6 +51,7 @@ jobs:
         with:
           path: ~/.cache/trivy
           key: ${{ runner.os }}-trivy-db
+          restore-keys: ${{ runner.os }}-trivy-db
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -58,9 +59,10 @@ jobs:
           image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
+          cache-dir: '~/.cache/trivy'  # Use cached Trivy DB
 
       - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3  # Updated to v3 as v2 is deprecated
         with:
           sarif_file: 'trivy-results.sarif'
 
