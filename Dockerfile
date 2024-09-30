@@ -96,8 +96,14 @@ FROM openjdk:17-jdk-alpine
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Copy the project files into the container
+COPY . .
+
+# Install Maven in the Alpine image
+RUN apk add --no-cache maven
+
+# Grant execute permission to the Maven wrapper script (mvnw)
+RUN chmod +x ./mvnw
 
 # Build the application using Maven
 RUN ./mvnw clean package -DskipTests
