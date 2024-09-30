@@ -90,7 +90,7 @@
 # EXPOSE 8080
 
 # ENTRYPOINT [ "java", "org.springframework.boot.loader.launch.JarLauncher" ]
-# Use an official OpenJDK runtime as a parent image
+# Use an official OpenJDK runtime based on Alpine as a parent image
 FROM openjdk:17-jdk-alpine
 
 # Set the working directory inside the container
@@ -105,10 +105,10 @@ RUN apk add --no-cache maven
 # Grant execute permission to the Maven wrapper script (mvnw)
 RUN chmod +x ./mvnw
 
-# Build the application using Maven
-RUN ./mvnw clean package -DskipTests
+# Compile and package the application using Maven
+RUN ./mvnw clean compile package -DskipTests
 
-# Expose the port the app runs on
+# Expose the port that the app runs on
 EXPOSE 8080
 
 # Run the Spring Boot application
