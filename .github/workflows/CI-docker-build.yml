@@ -1,0 +1,74 @@
+name: Build, Scan, and Push Docker Image
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Configure Maven settings
+        run: |
+          mkdir -p ~/.m2
+          echo "<settings><mirrors><mirror><id>central</id><name>Central Repository</name><url>https://repo.maven.apache.org/maven2</url><mirrorOf>*</mirrorOf></mirror></mirrors></settings>" > ~/.m2/settings.xml
+
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: docker build . -t ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
+
+      - name: Run Docker Scout scan
+        run: |
+          docker scout cves ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest --exit-code --format sarif > scout-results.sarif
+          docker scout cves ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest --format json | jq -r '.vulnerabilities | group_by(.severity) | map({severity: .[0].severity, count: length}) | .[]' > vulnerability-summary.txt
+
+      - name: Upload Scout scan results
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-scout-results
+          path: |
+            scout-results.sarif
+            vulnerability-summary.txt
+
+      - name: Check for critical vulnerabilities
+        run: |
+          if grep -q "CRITICAL" vulnerability-summary.txt; then
+            echo "Critical vulnerabilities found. Please review the scan results."
+            exit 1
+          fi
+
+      - name: Push Docker image to Docker Hub
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
