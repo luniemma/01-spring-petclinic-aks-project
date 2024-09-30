@@ -30,11 +30,6 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Configure Maven settings
-        run: |
-          mkdir -p ~/.m2
-          echo "<settings><mirrors><mirror><id>central</id><name>Central Repository</name><url>https://repo.maven.apache.org/maven2</url><mirrorOf>*</mirrorOf></mirror></mirrors></settings>" > ~/.m2/settings.xml
-
       - name: Build and test with Maven
         run: mvn -B package -Dtest=!PostgresIntegrationTests --file pom.xml
 
@@ -50,22 +45,23 @@ jobs:
       - name: Build Docker image
         run: docker build . -t ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
 
-      - name: Run Docker Scout scan
-        run: |
-          docker scout cves ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest --exit-code --format sarif > scout-results.sarif
-          docker scout cves ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest --format json | jq -r '.vulnerabilities | group_by(.severity) | map({severity: .[0].severity, count: length}) | .[]' > vulnerability-summary.txt
-
-      - name: Upload Scout scan results
-        uses: actions/upload-artifact@v3
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
         with:
-          name: docker-scout-results
-          path: |
-            scout-results.sarif
-            vulnerability-summary.txt
+          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
 
       - name: Check for critical vulnerabilities
         run: |
-          if grep -q "CRITICAL" vulnerability-summary.txt; then
+          if trivy image --severity HIGH,CRITICAL --exit-code 1 --no-progress ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest; then
+            echo "No critical vulnerabilities found"
+          else
             echo "Critical vulnerabilities found. Please review the scan results."
             exit 1
           fi
