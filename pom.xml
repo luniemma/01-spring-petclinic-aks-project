@@ -78,8 +78,8 @@
     </dependency>
     <dependency>
       <groupId>mysql</groupId> <!-- Updated to mysql -->
-      <!-- Updated artifactId -->
-      <version>8.0.34</version> <!-- Added version -->
+      <artifactId>mysql-connector-java</artifactId> <!-- Added artifactId -->
+      <version>8.0.30.redhat-00002</version> <!-- Updated version to resolve vulnerability -->
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
