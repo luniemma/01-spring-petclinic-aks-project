@@ -14,10 +14,8 @@ pool:
   vmImage: 'ubuntu-latest'
 
 steps:
-- task: Checkout@2
+- checkout: self
   displayName: 'Checkout code'
-  inputs:
-    fetchDepth: 0
 
 - task: JavaToolInstaller@0
   inputs:
