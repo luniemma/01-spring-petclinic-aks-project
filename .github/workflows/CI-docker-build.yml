@@ -11,7 +11,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -45,7 +44,6 @@ jobs:
       - name: Build Docker image
         run: docker build . -t ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
 
-      # Add caching for Trivy database to avoid rate-limiting
       - name: Cache Trivy DB
         uses: actions/cache@v3
         with:
@@ -54,27 +52,36 @@ jobs:
           restore-keys: ${{ runner.os }}-trivy-db
 
       - name: Run Trivy vulnerability scanner
-        id: trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
-          cache-dir: '~/.cache/trivy'  # Use cached Trivy DB
+          cache-dir: '~/.cache/trivy'
 
       - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v3  # Updated to v3 as v2 is deprecated
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
 
       - name: Check for critical vulnerabilities
         run: |
-          if grep -q '"level": "CRITICAL"' trivy-results.sarif; then
+          if grep -q '"Severity": "CRITICAL"' trivy-results.sarif; then
             echo "Critical vulnerabilities found. Please review the scan results."
             exit 1
           else
             echo "No critical vulnerabilities found."
           fi
+
+      - name: Analyze code with SonarCloud
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
+          -Dsonar.organization=${{ secrets.SONAR_ORG }} \
+          -Dsonar.host.url=https://sonarcloud.io
 
       - name: Push Docker image to Docker Hub
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
