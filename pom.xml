@@ -180,43 +180,31 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>${maven-checkstyle.version}</version>
-        <dependencies>
-          <dependency>
-            <groupId>com.puppycrawl.tools</groupId>
-            <artifactId>checkstyle</artifactId>
-            <version>${checkstyle.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>io.spring.nohttp</groupId>
-            <artifactId>nohttp-checkstyle</artifactId>
-            <version>${nohttp-checkstyle.version}</version>
-          </dependency>
-        </dependencies>
-        <executions>
-          <execution>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-checkstyle-plugin</artifactId>
+    <version>3.3.1</version>
+    <configuration>
+        <configLocation>checkstyle.xml</configLocation>
+        <includeTestSourceDirectory>true</includeTestSourceDirectory>
+        <excludes>**/module-info.java</excludes>
+        <propertyExpansion>checkstyle.config.location=${checkstyle.config.location}</propertyExpansion>
+    </configuration>
+    <executions>
+        <execution>
             <id>nohttp-checkstyle-validation</id>
             <phase>validate</phase>
-            <configuration>
-              <configLocation>src/checkstyle/nohttp-checkstyle.xml</configLocation>
-              <sourceDirectories>${basedir}</sourceDirectories>
-              <includes>**/*</includes>
-              <excludes>**/.git/**/*,**/.idea/**/*,**/target/**/,**/.flattened-pom.xml,**/*.class</excludes>
-              <propertyExpansion>
-                <property>
-                  <name>config_loc</name>
-                  <value>${basedir}/src/checkstyle/</value>
-                </property>
-              </propertyExpansion>
-            </configuration>
             <goals>
-              <goal>check</goal>
+                <goal>check</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
+            <configuration>
+                <configLocation>checkstyle/nohttp-checkstyle.xml</configLocation>
+                <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                <failOnViolation>true</failOnViolation>
+                <logViolationsToConsole>true</logViolationsToConsole>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
       <plugin>
         <groupId>org.graalvm.buildtools</groupId>
         <artifactId>native-maven-plugin</artifactId>
