@@ -32,14 +32,14 @@ steps:
     path: $(Pipeline.Workspace)/.m2/repository
   displayName: Cache Maven packages
 
-- task: Maven@3
+- task: Maven@4
   inputs:
     mavenPOMFile: 'pom.xml'
     goals: 'clean install'
     options: '-B -Dtest=!PostgresIntegrationTests'
   displayName: 'Build and test with Maven'
 
-- task: Maven@3
+- task: Maven@4
   inputs:
     mavenPOMFile: 'pom.xml'
     goals: 'org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.1.2184:sonar'
@@ -87,3 +87,4 @@ steps:
     pathToPublish: '$(System.DefaultWorkingDirectory)/target/surefire-reports'
     artifactName: 'surefire-reports'
   displayName: 'Upload test reports'
+
