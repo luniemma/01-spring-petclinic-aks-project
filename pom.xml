@@ -77,16 +77,17 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>mysql</groupId> <!-- Updated to mysql -->
-      <artifactId>mysql-connector-java</artifactId> <!-- Added artifactId -->
-      <version>8.0.30.redhat-00002</version> <!-- Updated version to resolve vulnerability -->
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <version>8.0.33</version> <!-- Use the latest stable version -->
+    <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.postgresql</groupId>
-      <artifactId>postgresql</artifactId>
-      <version>42.6.1</version> <!-- Update to a secure version -->
-      <scope>runtime</scope>
-    </dependency>
+    <groupId>org.postgresql</groupId>
+    <artifactId>postgresql</artifactId>
+    <version>42.6.1</version>
+    <scope>runtime</scope>
+</dependency>
 
     <!-- Caching -->
     <dependency>
