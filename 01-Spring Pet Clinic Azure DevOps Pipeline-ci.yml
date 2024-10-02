@@ -1,0 +1,89 @@
+trigger:
+  - master
+
+pr:
+  - master
+
+variables:
+  - group: sonarcloud-variables
+  - group: acr-variables
+  - name: imagePullSecret
+    value: 'acr-auth'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- checkout: self
+  displayName: 'Checkout code'
+
+- task: JavaToolInstaller@0
+  inputs:
+    versionSpec: '17'
+    jdkArchitectureOption: 'x64'
+    jdkSourceOption: 'PreInstalled'
+
+- task: Cache@2
+  inputs:
+    key: 'maven | "$(Agent.OS)" | **/pom.xml'
+    restoreKeys: |
+      maven | "$(Agent.OS)"
+      maven
+    path: $(Pipeline.Workspace)/.m2/repository
+  displayName: Cache Maven packages
+
+- task: Maven@4
+  inputs:
+    mavenPOMFile: 'pom.xml'
+    goals: 'clean install'
+    options: '-B -Dtest=!PostgresIntegrationTests'
+  displayName: 'Build and test with Maven'
+
+- task: Maven@4
+  inputs:
+    mavenPOMFile: 'pom.xml'
+    goals: 'org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.1.2184:sonar'
+    options: '-Dsonar.projectKey=$(SONAR_PROJECT_KEY) -Dsonar.organization=$(SONAR_ORG) -Dsonar.host.url=https://sonarcloud.io'
+  env:
+    SONAR_TOKEN: $(SONAR_TOKEN)
+  displayName: 'SonarCloud Scan'
+
+- task: Docker@2
+  inputs:
+    containerRegistry: 'acr-service-connection'
+    repository: 'spring-petclinic'
+    command: 'buildAndPush'
+    Dockerfile: '**/Dockerfile'
+    tags: |
+      $(Build.BuildId)
+      latest
+  displayName: 'Build and push Docker image to ACR'
+
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'az-service-connection'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az acr login --name $(ACR_NAME)
+      docker pull $(ACR_NAME).azurecr.io/spring-petclinic:$(Build.BuildId)
+      
+      wget https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.deb
+      sudo dpkg -i trivy_0.18.3_Linux-64bit.deb
+      
+      trivy image --format json --output trivy-results.json $(ACR_NAME).azurecr.io/spring-petclinic:$(Build.BuildId)
+      
+      if jq -e '.Results[] | select(.Vulnerabilities[] | select(.Severity == "CRITICAL"))' trivy-results.json > /dev/null; then
+        echo "Critical vulnerabilities found. Please review the scan results."
+        exit 1
+      else
+        echo "No critical vulnerabilities found."
+      fi
+  displayName: 'Run Trivy vulnerability scanner on ACR image'
+
+- task: PublishBuildArtifacts@1
+  condition: failed()
+  inputs:
+    pathToPublish: '$(System.DefaultWorkingDirectory)/target/surefire-reports'
+    artifactName: 'surefire-reports'
+  displayName: 'Upload test reports'
