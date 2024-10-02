@@ -45,7 +45,7 @@ public class PetTypeFormatter implements Formatter<PetType> {
 
 	@Override
 	public String print(PetType petType, Locale locale) {
-		return petType.getName();
+		return petType != null ? petType.getName() : ""; // Ensure non-null return
 	}
 
 	@Override

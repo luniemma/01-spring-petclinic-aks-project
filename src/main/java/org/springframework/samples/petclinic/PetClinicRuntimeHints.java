@@ -21,11 +21,13 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.samples.petclinic.model.BaseEntity;
 import org.springframework.samples.petclinic.model.Person;
 import org.springframework.samples.petclinic.vet.Vet;
+import org.springframework.lang.NonNull; // Added import for NonNull
+import org.springframework.lang.Nullable; // Add this import for @Nullable
 
 public class PetClinicRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
-	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) { // Changed @NonNull to @Nullable
 		hints.resources().registerPattern("db/*"); // https://github.com/spring-projects/spring-boot/issues/32654
 		hints.resources().registerPattern("messages/*");
 		hints.resources().registerPattern("META-INF/resources/webjars/*");
