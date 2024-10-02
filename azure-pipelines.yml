@@ -17,11 +17,9 @@ steps:
 - checkout: self
   displayName: 'Checkout code'
 
-- task: JavaToolInstaller@0
-  inputs:
-    versionSpec: '17'
-    jdkArchitectureOption: 'x64'
-    jdkSourceOption: 'PreInstalled'
+# Ensure the .m2/repository directory exists
+- script: mkdir -p $(Pipeline.Workspace)/.m2/repository
+  displayName: 'Ensure .m2/repository exists'
 
 - task: Cache@2
   inputs:
@@ -30,7 +28,8 @@ steps:
       maven | "$(Agent.OS)"
       maven
     path: $(Pipeline.Workspace)/.m2/repository
-  displayName: Cache Maven packages
+  displayName: 'Cache Maven packages'
+
 
 - task: Maven@4
   inputs:
