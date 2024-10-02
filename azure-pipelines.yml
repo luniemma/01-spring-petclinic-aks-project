@@ -21,6 +21,15 @@ steps:
 - script: mkdir -p $(Pipeline.Workspace)/.m2/repository
   displayName: 'Ensure .m2/repository exists'
 
+# First, run Maven to populate the .m2/repository before caching
+- task: Maven@4
+  inputs:
+    mavenPOMFile: 'pom.xml'
+    goals: 'clean install'
+    options: '-B -Dtest=!PostgresIntegrationTests'
+  displayName: 'Build and test with Maven to populate cache'
+
+# Now cache the .m2/repository folder
 - task: Cache@2
   inputs:
     key: 'maven | "$(Agent.OS)" | **/pom.xml'
@@ -29,14 +38,6 @@ steps:
       maven
     path: $(Pipeline.Workspace)/.m2/repository
   displayName: 'Cache Maven packages'
-
-
-- task: Maven@4
-  inputs:
-    mavenPOMFile: 'pom.xml'
-    goals: 'clean install'
-    options: '-B -Dtest=!PostgresIntegrationTests'
-  displayName: 'Build and test with Maven'
 
 - task: Maven@4
   inputs:
