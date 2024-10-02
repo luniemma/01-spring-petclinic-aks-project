@@ -27,7 +27,10 @@ import org.springframework.lang.Nullable; // Add this import for @Nullable
 public class PetClinicRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
-	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) { // Changed @NonNull to @Nullable
+	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) { // Changed
+																								// @NonNull
+																								// to
+																								// @Nullable
 		hints.resources().registerPattern("db/*"); // https://github.com/spring-projects/spring-boot/issues/32654
 		hints.resources().registerPattern("messages/*");
 		hints.resources().registerPattern("META-INF/resources/webjars/*");

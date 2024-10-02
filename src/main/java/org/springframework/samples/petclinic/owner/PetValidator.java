@@ -35,7 +35,8 @@ public class PetValidator implements Validator {
 	private static final String REQUIRED = "required";
 
 	@Override
-	public void validate(@NonNull Object obj, @NonNull Errors errors) { // Added @NonNull to errors
+	public void validate(@NonNull Object obj, @NonNull Errors errors) { // Added @NonNull
+																		// to errors
 		Pet pet = (Pet) obj;
 		String name = pet.getName();
 		// name validation
