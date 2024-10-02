@@ -17,6 +17,16 @@ steps:
 - checkout: self
   displayName: 'Checkout code'
 
+# Now cache the .m2/repository folder before running Maven build
+- task: Cache@2
+  inputs:
+    key: 'maven | "$(Agent.OS)" | **/pom.xml'
+    restoreKeys: |
+      maven | "$(Agent.OS)"
+      maven
+    path: $(Pipeline.Workspace)/.m2/repository
+  displayName: 'Restore Cache for Maven packages'
+
 # Ensure the .m2/repository directory exists
 - script: mkdir -p $(Pipeline.Workspace)/.m2/repository
   displayName: 'Ensure .m2/repository exists'
@@ -27,18 +37,16 @@ steps:
     mavenPOMFile: 'pom.xml'
     goals: 'clean install'
     options: '-B -Dtest=!PostgresIntegrationTests'
-  displayName: 'Build and test with Maven to populate cache'
+  displayName: 'Build and test with Maven'
 
-# Now cache the .m2/repository folder
+# Re-cache Maven dependencies after the build
 - task: Cache@2
   inputs:
     key: 'maven | "$(Agent.OS)" | **/pom.xml'
-    restoreKeys: |
-      maven | "$(Agent.OS)"
-      maven
     path: $(Pipeline.Workspace)/.m2/repository
   displayName: 'Cache Maven packages'
 
+# SonarCloud analysis
 - task: Maven@4
   inputs:
     mavenPOMFile: 'pom.xml'
@@ -48,6 +56,7 @@ steps:
     SONAR_TOKEN: $(SONAR_TOKEN)
   displayName: 'SonarCloud Scan'
 
+# Docker image build and push to Azure Container Registry
 - task: Docker@2
   inputs:
     containerRegistry: 'acr-service-connection'
@@ -59,6 +68,7 @@ steps:
       latest
   displayName: 'Build and push Docker image to ACR'
 
+# Run Trivy vulnerability scanner on the image in ACR
 - task: AzureCLI@2
   inputs:
     azureSubscription: 'az-service-connection'
@@ -68,8 +78,9 @@ steps:
       az acr login --name $(ACR_NAME)
       docker pull $(ACR_NAME).azurecr.io/spring-petclinic:$(Build.BuildId)
       
-      wget https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.deb
-      sudo dpkg -i trivy_0.18.3_Linux-64bit.deb
+      TRIVY_VERSION=$(curl -s "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | jq -r .tag_name)
+      wget https://github.com/aquasecurity/trivy/releases/download/$TRIVY_VERSION/trivy_${TRIVY_VERSION}_Linux-64bit.deb
+      sudo dpkg -i trivy_${TRIVY_VERSION}_Linux-64bit.deb
       
       trivy image --format json --output trivy-results.json $(ACR_NAME).azurecr.io/spring-petclinic:$(Build.BuildId)
       
@@ -81,8 +92,9 @@ steps:
       fi
   displayName: 'Run Trivy vulnerability scanner on ACR image'
 
+# Publish test reports only if the build or tests fail
 - task: PublishBuildArtifacts@1
-  condition: failed()
+  condition: always()
   inputs:
     pathToPublish: '$(System.DefaultWorkingDirectory)/target/surefire-reports'
     artifactName: 'surefire-reports'
