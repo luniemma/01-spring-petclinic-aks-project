@@ -114,11 +114,12 @@ public class PostgresIntegrationTests {
 				Arrays.sort(names);
 				for (String name : names) {
 					String resolved = environment.getProperty(name);
-					String value = source.getProperty(name).toString();
-					if (resolved.equals(value)) {
+					Object propertyValue = source.getProperty(name);
+					if (resolved != null && propertyValue != null && resolved.equals(propertyValue.toString())) {
 						log.info(name + "=" + resolved);
 					}
 					else {
+						String value = ""; // Initialize 'value' appropriately
 						log.info(name + "=" + value + " OVERRIDDEN to " + resolved);
 					}
 				}
