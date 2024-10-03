@@ -105,3 +105,9 @@ jobs:
         with:
           name: surefire-reports
           path: target/surefire-reports
+
+kubectl create secret docker-registry springkey \
+--docker-server=https://index.docker.io/v1/ \
+--docker-username=luniemma \
+--docker-password=African2022! \
+--docker-email=luniyisiemmanuel@gmail.com

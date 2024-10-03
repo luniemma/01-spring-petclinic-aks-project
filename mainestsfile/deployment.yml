@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-petclinic
+  labels:
+    app: spring-petclinic
+spec:
+  replicas: 3  # You can adjust the number of replicas
+  selector:
+    matchLabels:
+      app: spring-petclinic
+  template:
+    metadata:
+      labels:
+        app: spring-petclinic
+    spec:
+      imagePullSecrets:
+        - name: springkey
+      containers:
+      - name: spring-petclinic
+        image: luniemma/spring-petclinic:latest  # Replace this with your Docker image
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:mysql://mysql-service-name:3306/petclinic"  # Adjust this for your database connection
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: password
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-petclinic-service
+spec:
+  selector:
+    app: spring-petclinic
+  ports:
+    - protocol: TCP
+      port: 80  # External port
+      targetPort: 8080  # Internal container port
+  type: LoadBalancer  # For AKS, use LoadBalancer to expose the service publicly
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spring-petclinic-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: petclinic.clouddevopshq.com # Replace with your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: spring-petclinic-service
+            port:
+              number: 80
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+type: Opaque
+data:
+  username: "bHVuaWVtbWE="
+  password: "ZGJwYXNzd29yZCE="
+
+
