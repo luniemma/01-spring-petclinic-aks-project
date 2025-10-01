@@ -12,8 +12,9 @@ FROM eclipse-temurin:17-jdk
 ENV PORT 8080
 EXPOSE 8080
 
-# Copy built JARs to the runtime image
-COPY --from=BUILD /project/build/libs/* /opt/
+# Copy the built JAR to the runtime image and give it a predictable name
+ARG JAR_FILE=/project/build/libs/*.jar
+COPY --from=BUILD ${JAR_FILE} /opt/app.jar
 
 # Set working directory
 WORKDIR /opt/
@@ -21,5 +22,5 @@ WORKDIR /opt/
 # List files in the /opt directory for verification
 RUN ls -l
 
-# Use a specific JAR name in CMD, assuming the built JAR follows the naming convention
-CMD ["java", "-jar", "spring-petclinic-1.0.0.jar"]  # Replace <version> with the actual version
+# Run the packaged Spring Boot application
+CMD ["java", "-jar", "app.jar"]
